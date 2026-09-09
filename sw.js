@@ -1,5 +1,5 @@
 /* 董记 Service Worker */
-const VER = 'dongji-v3';
+const VER = 'dongji-v4';
 const SHELL = [
   './',
   './index.html',
