@@ -383,9 +383,15 @@ input,select,textarea{font:inherit;color:inherit;user-select:text;-webkit-user-s
 }
 .sheet-close{
   width:34px;height:34px;border-radius:10px;background:var(--bg);
-  display:flex;align-items:center;justify-content:center;color:var(--text-2);flex:0 0 auto;
+  display:flex;align-items:center;justify-content:center;color:var(--text-2);
+  flex:0 0 auto;
+  position:relative;z-index:51;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  cursor:pointer;
 }
 .sheet-close:active{background:var(--line);}
+.sheet-close *{pointer-events:none;}
 
 /* 日期面板行 */
 .dr{
