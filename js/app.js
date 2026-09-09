@@ -46,35 +46,56 @@
         mask.classList.add('on');
       });
       onClose = opts.onClose || null;
-      const close = () => closeSheet();
 
-      // 关闭按钮
-      const closeBtn = sheet.querySelector('.sheet-close');
-      if (closeBtn) closeBtn.addEventListener('click', close);
+      // 关闭按钮 - 用 sheet 上的事件委托 + 多事件兜底（兼容安卓/华为/Edge 移动端）
+      const onCloseTap = (e) => {
+        const t = e.target;
+        if (!t) return;
+        if (t.closest && (t.closest('.sheet-close') || t.closest('[data-close]'))) {
+          e.preventDefault();
+          e.stopPropagation();
+          close();
+        }
+      };
+      // 用 onclick 替换旧的 listener，避免重复绑定
+      sheet.onclick = onCloseTap;
+      sheet.onpointerup = onCloseTap;
 
       // 蒙板点击关闭
-      mask.onclick = close;
+      mask.onclick = () => close();
 
-      // 下滑关闭
+      // 下滑关闭（不修改 sheet.style.transform，避免与 CSS transition 冲突）
       let startY = 0, dy = 0, drag = false;
-      sheet.addEventListener('touchstart', (e) => {
-        if (e.touches.length !== 1) return;
-        if (sheet.scrollTop > 0) return;
+      const sheetBody = sheet; // 整个 sheet 都可下滑关闭
+      sheetBody.addEventListener('touchstart', (e) => {
+        // 关闭按钮/链接/输入元素上的触摸不触发下滑
+        const t = e.target;
+        if (t && t.closest && t.closest('.sheet-close, button, a, input, textarea, select, .picker, .day-icons')) {
+          drag = false; return;
+        }
+        if (e.touches.length !== 1) { drag = false; return; }
+        if (sheet.scrollTop > 0) { drag = false; return; }
         startY = e.touches[0].clientY;
         drag = true;
       }, { passive: true });
-      sheet.addEventListener('touchmove', (e) => {
+      sheetBody.addEventListener('touchmove', (e) => {
         if (!drag) return;
         dy = e.touches[0].clientY - startY;
-        if (dy < 0) dy = 0;
-        sheet.style.transform = 'translateY(' + dy + 'px)';
-        if (dy > 60) {
+        if (dy < 0) { dy = 0; return; }
+        if (dy > 8) {
+          // 用 rAF + translate3d，不直接覆盖 CSS 的 transition 关键帧
+          requestAnimationFrame(() => {
+            sheet.style.transform = 'translate3d(0,' + dy + 'px,0)';
+          });
+        }
+        if (dy > 90) {
           drag = false;
           close();
         }
       }, { passive: true });
-      sheet.addEventListener('touchend', () => {
-        if (dy < 80) {
+      sheetBody.addEventListener('touchend', () => {
+        if (drag && dy < 100) {
+          // 回弹
           sheet.style.transform = '';
         }
         drag = false; dy = 0; startY = 0;
